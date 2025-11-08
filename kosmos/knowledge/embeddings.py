@@ -5,7 +5,6 @@ Uses the allenai/specter model optimized for scientific document similarity.
 SPECTER is trained on citation graphs and produces 768-dimensional embeddings.
 """
 
-from sentence_transformers import SentenceTransformer
 from typing import List, Optional, Union
 import numpy as np
 from pathlib import Path
@@ -14,6 +13,15 @@ import logging
 from kosmos.literature.base_client import PaperMetadata
 
 logger = logging.getLogger(__name__)
+
+# Optional dependency - sentence_transformers
+try:
+    from sentence_transformers import SentenceTransformer
+    HAS_SENTENCE_TRANSFORMERS = True
+except ImportError:
+    logger.warning("sentence_transformers not installed. Install with: pip install sentence-transformers")
+    HAS_SENTENCE_TRANSFORMERS = False
+    SentenceTransformer = None
 
 
 class PaperEmbedder:
@@ -45,6 +53,13 @@ class PaperEmbedder:
         Note:
             First run will download ~440MB model. Subsequent runs use cached version.
         """
+        if not HAS_SENTENCE_TRANSFORMERS:
+            logger.warning("SentenceTransformers not available. PaperEmbedder will not function.")
+            self.model = None
+            self.model_name = model_name
+            self.embedding_dim = 768  # Default SPECTER dimension
+            return
+
         self.model_name = model_name
 
         # Set cache directory if provided

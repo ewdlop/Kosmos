@@ -6,7 +6,7 @@ Implements mandatory and optional stopping criteria:
 - Optional: Novelty decline, diminishing returns
 """
 
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 from enum import Enum
