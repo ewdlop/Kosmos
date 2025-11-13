@@ -13,7 +13,12 @@ import os
 
 
 class ClaudeConfig(BaseSettings):
-    """Claude/Anthropic configuration."""
+    """
+    Claude/Anthropic configuration.
+
+    Note: This class is maintained for backward compatibility.
+    New code should use AnthropicConfig or the provider-agnostic interface.
+    """
 
     api_key: str = Field(
         description="Anthropic API key or '999...' for CLI mode",
@@ -48,6 +53,55 @@ class ClaudeConfig(BaseSettings):
     def is_cli_mode(self) -> bool:
         """Check if using CLI mode (API key is all 9s)."""
         return self.api_key.replace('9', '') == ''
+
+    model_config = SettingsConfigDict(populate_by_name=True)
+
+
+# Alias for clarity
+AnthropicConfig = ClaudeConfig
+
+
+class OpenAIConfig(BaseSettings):
+    """
+    OpenAI configuration.
+
+    Supports OpenAI official API and OpenAI-compatible providers
+    (Ollama, OpenRouter, Together AI, LM Studio, etc.)
+    """
+
+    api_key: str = Field(
+        description="OpenAI API key (or dummy key for local models)",
+        alias="OPENAI_API_KEY"
+    )
+    model: str = Field(
+        default="gpt-4-turbo",
+        description="Model name (e.g., gpt-4-turbo, llama3.1:70b)",
+        alias="OPENAI_MODEL"
+    )
+    max_tokens: int = Field(
+        default=4096,
+        ge=1,
+        le=128000,
+        description="Maximum tokens per request",
+        alias="OPENAI_MAX_TOKENS"
+    )
+    temperature: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=2.0,
+        description="Sampling temperature",
+        alias="OPENAI_TEMPERATURE"
+    )
+    base_url: Optional[str] = Field(
+        default=None,
+        description="Custom base URL for OpenAI-compatible APIs (e.g., http://localhost:11434/v1 for Ollama)",
+        alias="OPENAI_BASE_URL"
+    )
+    organization: Optional[str] = Field(
+        default=None,
+        description="OpenAI organization ID (optional)",
+        alias="OPENAI_ORGANIZATION"
+    )
 
     model_config = SettingsConfigDict(populate_by_name=True)
 
@@ -599,11 +653,16 @@ class KosmosConfig(BaseSettings):
         config = get_config()
 
         # Access configuration
-        print(config.claude.model)
+        print(config.claude.model)  # Backward compatible
         print(config.research.max_iterations)
         print(config.database.url)
 
-        # Check Claude mode
+        # Multi-provider support
+        print(config.llm_provider)  # "anthropic" or "openai"
+        if config.llm_provider == "openai":
+            print(config.openai.model)
+
+        # Check Claude mode (backward compatible)
         if config.claude.is_cli_mode:
             print("Using Claude Code CLI")
         else:
@@ -611,8 +670,17 @@ class KosmosConfig(BaseSettings):
         ```
     """
 
+    # LLM Provider Selection
+    llm_provider: Literal["anthropic", "openai"] = Field(
+        default="anthropic",
+        description="LLM provider to use (anthropic or openai)",
+        alias="LLM_PROVIDER"
+    )
+
     # Component configurations
-    claude: ClaudeConfig = Field(default_factory=ClaudeConfig)
+    claude: ClaudeConfig = Field(default_factory=ClaudeConfig)  # Backward compatibility
+    anthropic: Optional[AnthropicConfig] = Field(default=None)  # New name (optional, defaults to claude)
+    openai: Optional[OpenAIConfig] = Field(default=None)  # OpenAI provider config
     research: ResearchConfig = Field(default_factory=ResearchConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
@@ -652,9 +720,15 @@ class KosmosConfig(BaseSettings):
         """
         missing = []
 
-        # Check Claude
-        if not self.claude.api_key:
-            missing.append("ANTHROPIC_API_KEY not set")
+        # Check LLM provider configuration
+        if self.llm_provider == "anthropic":
+            if not self.claude.api_key:
+                missing.append("ANTHROPIC_API_KEY not set (required for anthropic provider)")
+        elif self.llm_provider == "openai":
+            if self.openai is None:
+                missing.append("OpenAI configuration missing (OPENAI_API_KEY not set)")
+            elif not self.openai.api_key:
+                missing.append("OPENAI_API_KEY not set (required for openai provider)")
 
         # Check Pinecone if selected
         if self.vector_db.type == "pinecone" and not self.vector_db.pinecone_api_key:
@@ -669,7 +743,8 @@ class KosmosConfig(BaseSettings):
         Returns:
             dict: Configuration as dictionary
         """
-        return {
+        config_dict = {
+            "llm_provider": self.llm_provider,
             "claude": self.claude.model_dump(),
             "research": self.research.model_dump(),
             "database": self.database.model_dump(),
@@ -683,6 +758,14 @@ class KosmosConfig(BaseSettings):
             "monitoring": self.monitoring.model_dump(),
             "development": self.development.model_dump(),
         }
+
+        # Add provider-specific configs if present
+        if self.anthropic:
+            config_dict["anthropic"] = self.anthropic.model_dump()
+        if self.openai:
+            config_dict["openai"] = self.openai.model_dump()
+
+        return config_dict
 
 
 # Singleton configuration instance

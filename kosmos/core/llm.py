@@ -1,11 +1,14 @@
 """
-Claude LLM integration supporting both Anthropic API and Claude Code CLI.
+Multi-provider LLM integration for Kosmos.
 
-This module provides a unified interface to Claude that automatically routes to either:
-1. Anthropic API (when ANTHROPIC_API_KEY is a real API key)
-2. Claude Code CLI (when ANTHROPIC_API_KEY is set to all 9s)
+Supports both Anthropic (Claude) and OpenAI providers through a unified interface.
+Maintains backward compatibility with existing ClaudeClient usage.
 
-The routing is handled by the anthropic_router library.
+This module provides:
+1. Anthropic API (direct API or Claude Code CLI routing)
+2. OpenAI API (official OpenAI or OpenAI-compatible providers like Ollama, OpenRouter)
+3. Backward-compatible ClaudeClient interface
+4. Provider-agnostic get_client() function
 """
 
 import os
@@ -21,6 +24,7 @@ except ImportError:
     print("Warning: anthropic package not installed. Install with: pip install anthropic")
 
 from kosmos.core.claude_cache import get_claude_cache, ClaudeCache
+from kosmos.core.providers.base import LLMProvider
 
 logger = logging.getLogger(__name__)
 
@@ -562,20 +566,81 @@ class ClaudeClient:
 
 
 # Singleton instance for convenience
-_default_client: Optional[ClaudeClient] = None
+_default_client: Optional[Union[ClaudeClient, LLMProvider]] = None
 
 
-def get_client(reset: bool = False) -> ClaudeClient:
+def get_client(reset: bool = False, use_provider_system: bool = True) -> Union[ClaudeClient, LLMProvider]:
     """
-    Get or create default Claude client singleton.
+    Get or create default LLM client singleton.
+
+    This function provides backward compatibility while enabling the new multi-provider system.
 
     Args:
         reset: If True, create a new client instance
+        use_provider_system: If True, use new provider system based on config (default).
+                           If False, use legacy ClaudeClient (backward compatibility).
 
     Returns:
-        ClaudeClient: Default client instance
+        Union[ClaudeClient, LLMProvider]: Client instance
+
+    Examples:
+        ```python
+        # Default: Uses config to select provider
+        client = get_client()
+
+        # Legacy mode: Always use ClaudeClient
+        client = get_client(use_provider_system=False)
+
+        # Reset and recreate
+        client = get_client(reset=True)
+        ```
     """
     global _default_client
+
     if _default_client is None or reset:
-        _default_client = ClaudeClient()
+        if use_provider_system:
+            # Use new provider system
+            try:
+                from kosmos.config import get_config
+                from kosmos.core.providers import get_provider_from_config
+
+                config = get_config()
+                _default_client = get_provider_from_config(config)
+                logger.info(f"Initialized {config.llm_provider} provider via config")
+
+            except Exception as e:
+                logger.warning(f"Failed to initialize provider from config: {e}. Falling back to ClaudeClient")
+                _default_client = ClaudeClient()
+        else:
+            # Legacy mode: use ClaudeClient directly
+            _default_client = ClaudeClient()
+            logger.info("Initialized legacy ClaudeClient")
+
     return _default_client
+
+
+def get_provider() -> LLMProvider:
+    """
+    Get the current LLM provider instance.
+
+    This is the recommended way to access the LLM provider in new code.
+
+    Returns:
+        LLMProvider: Current provider instance
+
+    Example:
+        ```python
+        from kosmos.core.llm import get_provider
+
+        provider = get_provider()
+        response = provider.generate("What is machine learning?")
+        print(response.content)
+        ```
+    """
+    client = get_client(use_provider_system=True)
+
+    # Ensure we return a provider instance
+    if not isinstance(client, LLMProvider):
+        raise TypeError(f"Expected LLMProvider, got {type(client)}")
+
+    return client

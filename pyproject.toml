@@ -24,8 +24,9 @@ classifiers = [
 ]
 
 dependencies = [
-    # Claude integration (supports both API and CLI via router)
-    "anthropic>=0.40.0",
+    # LLM Providers
+    "anthropic>=0.40.0",  # Claude/Anthropic provider
+    "openai>=1.0.0",      # OpenAI provider and OpenAI-compatible APIs
 
     # Configuration and validation
     "pydantic>=2.0.0",
