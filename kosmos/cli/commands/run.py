@@ -115,11 +115,34 @@ def run_research(
             config_obj.research.budget_usd = budget
         config_obj.claude.enable_cache = not no_cache
 
+        # Create flattened config dict for agents
+        # Agents expect flat keys, not nested KosmosConfig structure
+        flat_config = {
+            # Research settings
+            "max_iterations": config_obj.research.max_iterations,
+            "enabled_domains": config_obj.research.enabled_domains,
+            "enabled_experiment_types": config_obj.research.enabled_experiment_types,
+            "min_novelty_score": config_obj.research.min_novelty_score,
+            "enable_autonomous_iteration": config_obj.research.enable_autonomous_iteration,
+            "budget_usd": config_obj.research.budget_usd,
+
+            # Performance/concurrent operations settings
+            "enable_concurrent_operations": config_obj.performance.enable_concurrent_operations,
+            "max_parallel_hypotheses": config_obj.performance.max_parallel_hypotheses,
+            "max_concurrent_experiments": config_obj.performance.max_concurrent_experiments,
+            "max_concurrent_llm_calls": config_obj.performance.max_concurrent_llm_calls,
+            "llm_rate_limit_per_minute": config_obj.performance.llm_rate_limit_per_minute,
+
+            # LLM provider settings
+            "llm_provider": config_obj.llm_provider,
+            "enable_cache": config_obj.claude.enable_cache,
+        }
+
         # Create research director
         director = ResearchDirectorAgent(
             research_question=question,
             domain=domain,
-            config=config_obj
+            config=flat_config
         )
 
         # Run research with live progress
@@ -204,68 +227,87 @@ def run_with_progress(director, question: str, max_iterations: int) -> dict:
     # Run with live display
     with Live(progress, console=console, refresh_per_second=4):
         try:
-            # Start research (this would be the actual research loop)
-            # For now, simulate progress
-            results = {
-                "id": f"research_{int(time.time())}",
-                "question": question,
-                "domain": "auto",
-                "state": "COMPLETED",
-                "current_iteration": 0,
-                "max_iterations": max_iterations,
-                "hypotheses": [],
-                "experiments": [],
-                "metrics": {
-                    "api_calls": 0,
-                    "cache_hits": 0,
-                    "cache_misses": 0,
-                    "hypotheses_generated": 0,
-                    "experiments_executed": 0,
-                },
-            }
+            # Start research
+            director.execute({"action": "start_research"})
 
-            # This is where the actual research loop would go
-            # For demonstration, we'll show progress updates
-            for iteration in range(max_iterations):
+            # Research loop - execute until convergence or max iterations
+            iteration = 0
+            while iteration < max_iterations:
+                # Get current status
+                status = director.get_research_status()
+
                 # Update iteration progress
                 progress.update(iteration_task, completed=iteration + 1)
 
-                # Simulate hypothesis generation
-                progress.update(hypothesis_task, completed=25)
-                time.sleep(0.1)
-                progress.update(hypothesis_task, completed=50)
-                time.sleep(0.1)
-                progress.update(hypothesis_task, completed=100)
+                # Update phase-specific progress based on workflow state
+                workflow_state = status.get("workflow_state", "INITIALIZING")
 
-                # Simulate experiment design
-                progress.update(experiment_task, completed=33)
-                time.sleep(0.1)
-                progress.update(experiment_task, completed=66)
-                time.sleep(0.1)
-                progress.update(experiment_task, completed=100)
+                if workflow_state == "GENERATING_HYPOTHESES":
+                    progress.update(hypothesis_task, completed=50)
+                elif workflow_state == "DESIGNING_EXPERIMENTS":
+                    progress.update(hypothesis_task, completed=100)
+                    progress.update(experiment_task, completed=50)
+                elif workflow_state == "EXECUTING_EXPERIMENTS":
+                    progress.update(experiment_task, completed=100)
+                    progress.update(execution_task, completed=50)
+                elif workflow_state == "ANALYZING_RESULTS":
+                    progress.update(execution_task, completed=100)
+                    progress.update(analysis_task, completed=50)
+                elif workflow_state in ["REFINING_HYPOTHESES", "CHECKING_CONVERGENCE"]:
+                    progress.update(analysis_task, completed=100)
 
-                # Simulate execution
-                progress.update(execution_task, completed=40)
-                time.sleep(0.1)
-                progress.update(execution_task, completed=80)
-                time.sleep(0.1)
-                progress.update(execution_task, completed=100)
+                # Check for convergence
+                if status.get("has_converged", False):
+                    progress.update(iteration_task, completed=max_iterations)
+                    break
 
-                # Simulate analysis
-                progress.update(analysis_task, completed=50)
-                time.sleep(0.1)
-                progress.update(analysis_task, completed=100)
+                # Execute next research step
+                director.execute({"action": "step"})
 
-                # Reset for next iteration
-                if iteration < max_iterations - 1:
-                    progress.update(hypothesis_task, completed=0)
-                    progress.update(experiment_task, completed=0)
-                    progress.update(execution_task, completed=0)
-                    progress.update(analysis_task, completed=0)
+                # Update iteration counter
+                iteration = status.get("iteration", iteration)
 
-                # NOTE: In real implementation, this would call:
-                # results = director.conduct_research(question)
-                # And update progress based on actual agent callbacks
+                # Small delay to allow UI updates
+                time.sleep(0.05)
+
+            # Mark all tasks as complete
+            progress.update(hypothesis_task, completed=100)
+            progress.update(experiment_task, completed=100)
+            progress.update(execution_task, completed=100)
+            progress.update(analysis_task, completed=100)
+
+            # Get final research status
+            final_status = director.get_research_status()
+
+            # Build results from actual research
+            results = {
+                "id": f"research_{int(time.time())}",
+                "question": question,
+                "domain": final_status.get("domain", "auto"),
+                "state": final_status.get("workflow_state", "COMPLETED"),
+                "current_iteration": final_status.get("iteration", 0),
+                "max_iterations": max_iterations,
+                "has_converged": final_status.get("has_converged", False),
+                "convergence_reason": final_status.get("convergence_reason"),
+                "hypotheses": [
+                    h.to_dict() if hasattr(h, 'to_dict') else h
+                    for h in director.research_plan.hypothesis_pool
+                ],
+                "experiments": [
+                    e.to_dict() if hasattr(e, 'to_dict') else e
+                    for e in director.research_plan.completed_experiments
+                ],
+                "metrics": {
+                    "api_calls": getattr(director.llm_client, 'total_requests', 0),
+                    "cache_hits": getattr(director.llm_client, 'cache_hits', 0),
+                    "cache_misses": getattr(director.llm_client, 'cache_misses', 0),
+                    "hypotheses_generated": final_status.get("hypothesis_pool_size", 0),
+                    "hypotheses_tested": final_status.get("hypotheses_tested", 0),
+                    "hypotheses_supported": final_status.get("hypotheses_supported", 0),
+                    "hypotheses_rejected": final_status.get("hypotheses_rejected", 0),
+                    "experiments_executed": final_status.get("experiments_completed", 0),
+                },
+            }
 
             return results
 
