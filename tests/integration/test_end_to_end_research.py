@@ -76,8 +76,7 @@ class TestSimpleResearchCycle:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_claude_for_simple_research,
-            max_iterations=3,
+            config={"max_iterations": 3}
         )
 
         # Start research
@@ -93,8 +92,7 @@ class TestSimpleResearchCycle:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_claude_for_simple_research,
-            max_iterations=3,
+            config={"max_iterations": 3}
         )
 
         director.start()
@@ -111,8 +109,7 @@ class TestSimpleResearchCycle:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_claude_for_simple_research,
-            max_iterations=3,
+            config={"max_iterations": 3}
         )
 
         director.start()
@@ -134,8 +131,7 @@ class TestSimpleResearchCycle:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_claude_for_simple_research,
-            max_iterations=2,  # Low limit for quick convergence
+            config={"max_iterations": 2}  # Low limit for quick convergence
         )
 
         director.start()
@@ -158,8 +154,7 @@ class TestSimpleResearchCycle:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_claude_for_simple_research,
-            max_iterations=3,
+            config={"max_iterations": 3}
         )
 
         director.start()
@@ -193,8 +188,7 @@ class TestComplexResearchCycle:
         director = ResearchDirectorAgent(
             research_question=complex_research_question,
             domain="neuroscience",  # Primary domain
-            llm_client=mock_llm_client,
-            max_iterations=10,
+            config={"max_iterations": 10}
         )
 
         director.start()
@@ -211,8 +205,7 @@ class TestComplexResearchCycle:
         director = ResearchDirectorAgent(
             research_question=complex_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=5,
+            config={"max_iterations": 5}
         )
 
         director.start()
@@ -241,8 +234,7 @@ class TestComplexResearchCycle:
         director = ResearchDirectorAgent(
             research_question=complex_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=10,
+            config={"max_iterations": 10}
         )
 
         director.start()
@@ -271,8 +263,7 @@ class TestComplexResearchCycle:
         director = ResearchDirectorAgent(
             research_question=complex_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=10,
+            config={"max_iterations": 10}
         )
 
         director.start()
@@ -302,8 +293,7 @@ class TestConvergenceScenarios:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=3,
+            config={"max_iterations": 3}
         )
 
         # Create convergence detector
@@ -336,8 +326,7 @@ class TestConvergenceScenarios:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=10,
+            config={"max_iterations": 10}
         )
 
         from kosmos.core.convergence import ConvergenceDetector
@@ -387,8 +376,7 @@ class TestConvergenceScenarios:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=10,
+            config={"max_iterations": 10}
         )
 
         from kosmos.core.convergence import ConvergenceDetector
@@ -428,8 +416,7 @@ class TestConvergenceScenarios:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=10,
+            config={"max_iterations": 10}
         )
 
         from kosmos.core.convergence import ConvergenceDetector
@@ -467,8 +454,7 @@ class TestReportGeneration:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=3,
+            config={"max_iterations": 3}
         )
 
         from kosmos.core.convergence import ConvergenceDetector, StoppingDecision, StoppingReason
@@ -537,8 +523,7 @@ class TestReportGeneration:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=2,
+            config={"max_iterations": 2}
         )
 
         from kosmos.core.convergence import ConvergenceDetector, StoppingDecision, StoppingReason
@@ -583,8 +568,7 @@ class TestReportGeneration:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=2,
+            config={"max_iterations": 2}
         )
 
         from kosmos.core.convergence import ConvergenceDetector, StoppingDecision, StoppingReason
@@ -630,8 +614,7 @@ class TestReportGeneration:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=2,
+            config={"max_iterations": 2}
         )
 
         from kosmos.core.convergence import ConvergenceDetector, StoppingDecision, StoppingReason
@@ -668,8 +651,7 @@ class TestReportGeneration:
         director = ResearchDirectorAgent(
             research_question=simple_research_question,
             domain="neuroscience",
-            llm_client=mock_llm_client,
-            max_iterations=2,
+            config={"max_iterations": 2}
         )
 
         from kosmos.core.convergence import ConvergenceDetector, StoppingDecision, StoppingReason

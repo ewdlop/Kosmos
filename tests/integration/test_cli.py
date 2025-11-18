@@ -79,9 +79,9 @@ class TestCLIBasicCommands:
         result = cli_runner.invoke(app, ["version"])
         assert result.exit_code == 0
         assert "Kosmos AI Scientist" in result.stdout
-        assert "v0.10.0" in result.stdout
+        assert "v0.2.0" in result.stdout
 
-    @patch("kosmos.cli.main.get_config")
+    @patch("kosmos.config.get_config")
     def test_info_command(self, mock_get_config, cli_runner, mock_config):
         """Test info command."""
         mock_get_config.return_value = mock_config
@@ -104,7 +104,7 @@ class TestCLIBasicCommands:
 class TestConfigCommand:
     """Test config command."""
 
-    @patch("kosmos.cli.commands.config.get_config")
+    @patch("kosmos.config.get_config")
     def test_config_show(self, mock_get_config, cli_runner, mock_config):
         """Test config show."""
         mock_get_config.return_value = mock_config
@@ -120,7 +120,7 @@ class TestConfigCommand:
         assert result.exit_code == 0
         assert "Configuration File Locations" in result.stdout
 
-    @patch("kosmos.cli.commands.config.get_config")
+    @patch("kosmos.config.get_config")
     @patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test_key"})
     def test_config_validate(self, mock_get_config, cli_runner, mock_config):
         """Test config validate."""
@@ -134,7 +134,7 @@ class TestConfigCommand:
 class TestCacheCommand:
     """Test cache command."""
 
-    @patch("kosmos.cli.commands.cache.get_cache_manager")
+    @patch("kosmos.core.cache_manager.get_cache_manager")
     def test_cache_stats(self, mock_get_manager, cli_runner, mock_cache_manager):
         """Test cache stats."""
         mock_get_manager.return_value = mock_cache_manager
@@ -144,7 +144,7 @@ class TestCacheCommand:
         assert "Cache Statistics" in result.stdout
         assert "Overall Cache Performance" in result.stdout
 
-    @patch("kosmos.cli.commands.cache.get_cache_manager")
+    @patch("kosmos.core.cache_manager.get_cache_manager")
     def test_cache_health(self, mock_get_manager, cli_runner, mock_cache_manager):
         """Test cache health check."""
         mock_get_manager.return_value = mock_cache_manager
@@ -154,7 +154,7 @@ class TestCacheCommand:
         assert "Running Health Check" in result.stdout
         assert "Health Check Results" in result.stdout
 
-    @patch("kosmos.cli.commands.cache.get_cache_manager")
+    @patch("kosmos.core.cache_manager.get_cache_manager")
     def test_cache_optimize(self, mock_get_manager, cli_runner, mock_cache_manager):
         """Test cache optimize."""
         mock_get_manager.return_value = mock_cache_manager
@@ -392,8 +392,8 @@ class TestInteractiveMode:
 ])
 def test_command_does_not_crash(cli_runner, command, args):
     """Test that commands don't crash."""
-    with patch("kosmos.cli.main.get_config"):
-        with patch("kosmos.cli.commands.cache.get_cache_manager"):
+    with patch("kosmos.config.get_config"):
+        with patch("kosmos.core.cache_manager.get_cache_manager"):
             result = cli_runner.invoke(app, [command] + args)
             # Should either succeed or fail gracefully, not crash
             assert result.exit_code in [0, 1]

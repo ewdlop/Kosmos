@@ -39,8 +39,7 @@ def director(mock_llm_client):
     return ResearchDirectorAgent(
         research_question="Does caffeine improve cognitive performance?",
         domain="neuroscience",
-        llm_client=mock_llm_client,
-        max_iterations=5,
+        config={"max_iterations": 5}
     )
 
 
@@ -90,12 +89,27 @@ class TestSingleIteration:
         assert director.workflow.current_state == WorkflowState.DESIGNING_EXPERIMENTS
 
         # Simulate experiment design
+        from kosmos.models.experiment import ResourceRequirements, ProtocolStep, Variable
         protocol = ExperimentProtocol(
             id="protocol_001",
+            name="Caffeine Cognitive Performance Test Protocol",
             hypothesis_id=hypothesis.id,
             experiment_type="computational",
-            methodology="Statistical analysis",
-            description="Test caffeine effects",
+            domain="neuroscience",
+            description="Comprehensive statistical analysis protocol to test the effects of caffeine on cognitive performance metrics including memory, attention, and reaction time.",
+            objective="Validate caffeine effects on cognitive performance through statistical analysis",
+            steps=[ProtocolStep(
+                step_number=1,
+                description="Run statistical analysis on caffeine performance data",
+                expected_duration_minutes=5
+            )],
+            variables={"caffeine_dose": Variable(name="caffeine_dose", description="Caffeine dose in milligrams", unit="mg")},
+            resource_requirements=ResourceRequirements(
+                estimated_runtime_seconds=300,
+                cpu_cores=1,
+                memory_gb=1,
+                storage_gb=0.1
+            )
         )
 
         director.research_plan.add_experiment(protocol.id)
