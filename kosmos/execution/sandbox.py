@@ -298,17 +298,26 @@ class DockerSandbox:
             try:
                 exit_status = container.wait(timeout=self.timeout)
                 timeout_occurred = False
+            except docker.errors.APIError as e:
+                # Docker API errors (including timeout)
+                if "timed out" in str(e).lower() or "timeout" in str(e).lower():
+                    logger.warning(f"Container timeout after {self.timeout}s: {e}")
+                    timeout_occurred = True
+
+                    # Try graceful shutdown
+                    try:
+                        container.stop(timeout=5)
+                    except:
+                        container.kill()
+
+                    exit_status = {'StatusCode': -1}
+                else:
+                    logger.error(f"Docker API error: {e}")
+                    raise
             except Exception as e:
-                logger.warning(f"Container timeout after {self.timeout}s: {e}")
-                timeout_occurred = True
-
-                # Try graceful shutdown
-                try:
-                    container.stop(timeout=5)
-                except:
-                    container.kill()
-
-                exit_status = {'StatusCode': -1}
+                # Other unexpected errors
+                logger.error(f"Unexpected error waiting for container: {e}")
+                raise
 
             execution_time = time.time() - start_time
 
