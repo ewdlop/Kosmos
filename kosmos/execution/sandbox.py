@@ -222,15 +222,30 @@ class DockerSandbox:
         """Run code in Docker container with resource limits and monitoring."""
 
         # Prepare volume mounts
+        # Convert paths for Windows Docker compatibility
+        import platform
+
+        def docker_path(path):
+            """Convert path for Docker volume mounting on Windows."""
+            path_str = str(path)
+            if platform.system() == 'Windows':
+                # Convert Windows paths like C:\path to /c/path for Docker
+                import re
+                path_str = re.sub(r'^([A-Za-z]):', r'/\1', path_str.replace('\\', '/'))
+            return path_str
+
+        code_dir = Path(temp_dir) / "code"
+        output_dir = Path(temp_dir) / "output"
+
         volumes = {
-            f"{temp_dir}/code": {'bind': '/workspace/code', 'mode': 'ro'},
-            f"{temp_dir}/output": {'bind': '/workspace/output', 'mode': 'rw'}
+            docker_path(code_dir): {'bind': '/workspace/code', 'mode': 'ro'},
+            docker_path(output_dir): {'bind': '/workspace/output', 'mode': 'rw'}
         }
 
         # Add data volume if exists
         data_dir = Path(temp_dir) / "data"
         if data_dir.exists():
-            volumes[str(data_dir)] = {'bind': '/workspace/data', 'mode': 'ro'}
+            volumes[docker_path(data_dir)] = {'bind': '/workspace/data', 'mode': 'ro'}
 
         # Prepare environment variables
         env = {
