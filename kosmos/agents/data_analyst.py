@@ -219,6 +219,106 @@ class DataAnalystAgent(BaseAgent):
             self.status = AgentStatus.IDLE
             self.tasks_completed += 1
 
+    def analyze(
+        self,
+        results: List[ExperimentResult],
+        hypothesis: Optional[Hypothesis] = None,
+        literature_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Analyze multiple experiment results and synthesize findings.
+
+        This is a convenience method that combines result interpretation
+        and pattern detection for batch analysis of results.
+
+        Args:
+            results: List of ExperimentResult objects to analyze
+            hypothesis: Optional hypothesis being tested
+            literature_context: Optional literature context string
+
+        Returns:
+            Dict with:
+                - individual_analyses: List of interpretations per result
+                - synthesis: Overall synthesis of findings
+                - patterns: Detected patterns across results
+                - anomalies: Detected anomalies
+
+        Example:
+            ```python
+            analysis = agent.analyze(
+                results=[result1, result2],
+                hypothesis=hypothesis
+            )
+            print(f"Synthesis: {analysis['synthesis']}")
+            ```
+        """
+        individual_analyses = []
+        all_anomalies = []
+
+        # Analyze each result individually
+        for result in results:
+            try:
+                interpretation = self.interpret_results(
+                    result=result,
+                    hypothesis=hypothesis,
+                    literature_context=literature_context
+                )
+                individual_analyses.append(interpretation)
+
+                # Detect anomalies if enabled
+                if self.anomaly_detection_enabled:
+                    anomalies = self.detect_anomalies(result)
+                    all_anomalies.extend(anomalies)
+
+            except Exception as e:
+                logger.warning(f"Failed to analyze result {result.id}: {e}")
+
+        # Detect patterns across all results
+        patterns = []
+        if len(results) > 1 and self.pattern_detection_enabled:
+            patterns = self.detect_patterns_across_results(results)
+
+        # Generate synthesis
+        synthesis = self._generate_synthesis(individual_analyses, patterns)
+
+        return {
+            "individual_analyses": individual_analyses,
+            "synthesis": synthesis,
+            "patterns": patterns,
+            "anomalies": all_anomalies
+        }
+
+    def _generate_synthesis(
+        self,
+        analyses: List['ResultInterpretation'],
+        patterns: List[str]
+    ) -> str:
+        """Generate a synthesis of multiple analyses."""
+        if not analyses:
+            return "No results to synthesize."
+
+        supported_count = sum(1 for a in analyses if a.hypothesis_supported)
+        total_count = len(analyses)
+
+        synthesis_parts = [
+            f"Analyzed {total_count} experiment results.",
+            f"{supported_count}/{total_count} results support the hypothesis." if total_count > 0 else "",
+        ]
+
+        if patterns:
+            synthesis_parts.append(f"Detected {len(patterns)} patterns across results.")
+
+        # Aggregate key findings
+        all_findings = []
+        for a in analyses:
+            if hasattr(a, 'key_findings'):
+                all_findings.extend(a.key_findings[:2])  # Top 2 findings per analysis
+
+        if all_findings:
+            synthesis_parts.append(f"Key findings: {'; '.join(all_findings[:5])}")
+
+        return " ".join(filter(None, synthesis_parts))
+
     # ========================================================================
     # RESULT INTERPRETATION
     # ========================================================================
@@ -261,9 +361,10 @@ class DataAnalystAgent(BaseAgent):
                 temperature=0.3  # Lower temperature for more focused analysis
             )
 
-            # Parse Claude's response
+            # Parse Claude's response (extract content from LLMResponse)
+            response_text = response.content if hasattr(response, 'content') else str(response)
             interpretation = self._parse_interpretation_response(
-                response, result.experiment_id, result
+                response_text, result.experiment_id, result
             )
 
             # Store in history for pattern detection

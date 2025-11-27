@@ -352,7 +352,9 @@ class TestPaperValidation:
             end_time=now,
             duration_seconds=1.5,
             python_version=f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-            platform=platform.system()
+            platform=platform.system(),
+            experiment_id="test_exp_001",
+            protocol_id="test_protocol_001"
         )
 
         # Create mock experiment result
@@ -380,9 +382,18 @@ class TestPaperValidation:
 
         first_analysis = analysis["individual_analyses"][0]
         print(f"✅ Analysis completed")
-        print(f"   Keys in analysis: {list(first_analysis.keys())}")
 
-        if "interpretation" in first_analysis:
+        # ResultInterpretation is a dataclass, not a dict
+        # Check for expected attributes
+        if hasattr(first_analysis, '__dict__'):
+            print(f"   Attributes: {list(first_analysis.__dict__.keys())}")
+        elif hasattr(first_analysis, 'keys'):
+            print(f"   Keys in analysis: {list(first_analysis.keys())}")
+
+        # Check for interpretation summary
+        if hasattr(first_analysis, 'summary'):
+            print(f"   Interpretation: {first_analysis.summary[:100]}...")
+        elif isinstance(first_analysis, dict) and "interpretation" in first_analysis:
             print(f"   Interpretation: {first_analysis['interpretation'][:100]}...")
 
         if "synthesis" in analysis:

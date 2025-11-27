@@ -117,6 +117,58 @@ class OpenAIConfig(BaseSettings):
     model_config = SettingsConfigDict(populate_by_name=True)
 
 
+class LiteLLMConfig(BaseSettings):
+    """
+    LiteLLM provider configuration.
+
+    Supports 100+ LLM providers via LiteLLM including:
+    - Ollama (local): ollama/llama3.1:8b
+    - OpenAI: gpt-4-turbo
+    - Anthropic: claude-3-5-sonnet-20241022
+    - DeepSeek: deepseek/deepseek-chat
+    - Azure, Bedrock, and many more
+    """
+
+    model: str = Field(
+        default="gpt-3.5-turbo",
+        description="Model name in LiteLLM format (e.g., ollama/llama3.1:8b, deepseek/deepseek-chat)",
+        alias="LITELLM_MODEL"
+    )
+    api_key: Optional[str] = Field(
+        default=None,
+        description="API key (not required for local models like Ollama)",
+        alias="LITELLM_API_KEY"
+    )
+    api_base: Optional[str] = Field(
+        default=None,
+        description="Custom base URL (e.g., http://localhost:11434 for Ollama)",
+        alias="LITELLM_API_BASE"
+    )
+    max_tokens: int = Field(
+        default=4096,
+        ge=1,
+        le=128000,
+        description="Maximum tokens per request",
+        alias="LITELLM_MAX_TOKENS"
+    )
+    temperature: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=2.0,
+        description="Sampling temperature",
+        alias="LITELLM_TEMPERATURE"
+    )
+    timeout: int = Field(
+        default=120,
+        ge=1,
+        le=600,
+        description="Request timeout in seconds",
+        alias="LITELLM_TIMEOUT"
+    )
+
+    model_config = SettingsConfigDict(populate_by_name=True)
+
+
 class ResearchConfig(BaseSettings):
     """Research workflow configuration."""
 
@@ -806,9 +858,9 @@ class KosmosConfig(BaseSettings):
     """
 
     # LLM Provider Selection
-    llm_provider: Literal["anthropic", "openai"] = Field(
+    llm_provider: Literal["anthropic", "openai", "litellm"] = Field(
         default="anthropic",
-        description="LLM provider to use (anthropic or openai)",
+        description="LLM provider to use (anthropic, openai, or litellm)",
         alias="LLM_PROVIDER"
     )
 
@@ -816,6 +868,7 @@ class KosmosConfig(BaseSettings):
     claude: Optional[ClaudeConfig] = Field(default_factory=_optional_claude_config)  # Backward compatibility
     anthropic: Optional[AnthropicConfig] = Field(default_factory=_optional_anthropic_config)  # New name (optional, defaults to claude)
     openai: Optional[OpenAIConfig] = Field(default_factory=_optional_openai_config)  # OpenAI provider config
+    litellm: Optional[LiteLLMConfig] = Field(default_factory=LiteLLMConfig)  # LiteLLM multi-provider config
     local_model: LocalModelConfig = Field(default_factory=LocalModelConfig)  # Local model settings (Ollama, etc.)
     research: ResearchConfig = Field(default_factory=ResearchConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
@@ -852,6 +905,10 @@ class KosmosConfig(BaseSettings):
                     "ANTHROPIC_API_KEY is required when LLM_PROVIDER=anthropic. "
                     "Please set ANTHROPIC_API_KEY in your environment or .env file."
                 )
+        elif self.llm_provider == "litellm":
+            # LiteLLM validation is lenient - local models (Ollama) don't need API keys
+            # API keys are only required for cloud providers and are validated at runtime
+            pass
         return self
 
     def create_directories(self):

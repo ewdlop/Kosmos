@@ -260,6 +260,58 @@ class ExperimentDesignerAgent(BaseAgent):
 
         return response
 
+    def design_experiments(
+        self,
+        hypotheses: List[Hypothesis],
+        preferred_experiment_type: Optional[ExperimentType] = None,
+        max_cost_usd: Optional[float] = None,
+        max_duration_days: Optional[float] = None,
+        store_in_db: bool = True
+    ) -> List[ExperimentDesignResponse]:
+        """
+        Design experimental protocols for multiple hypotheses.
+
+        This is a convenience wrapper around design_experiment() for batch
+        processing of multiple hypotheses.
+
+        Args:
+            hypotheses: List of Hypothesis objects to design experiments for
+            preferred_experiment_type: Preferred experiment type for all
+            max_cost_usd: Maximum cost constraint per experiment
+            max_duration_days: Maximum duration constraint per experiment
+            store_in_db: Whether to store protocols in database
+
+        Returns:
+            List of ExperimentDesignResponse objects, one per hypothesis
+
+        Example:
+            ```python
+            responses = agent.design_experiments(
+                hypotheses=[h1, h2, h3],
+                preferred_experiment_type=ExperimentType.COMPUTATIONAL
+            )
+            for resp in responses:
+                print(f"Protocol: {resp.protocol.name}")
+            ```
+        """
+        responses = []
+        for hypothesis in hypotheses:
+            try:
+                response = self.design_experiment(
+                    hypothesis=hypothesis,
+                    preferred_experiment_type=preferred_experiment_type,
+                    max_cost_usd=max_cost_usd,
+                    max_duration_days=max_duration_days,
+                    store_in_db=store_in_db
+                )
+                responses.append(response)
+            except Exception as e:
+                logger.warning(f"Failed to design experiment for hypothesis {hypothesis.id}: {e}")
+                # Continue with remaining hypotheses
+
+        logger.info(f"Designed {len(responses)} experiments for {len(hypotheses)} hypotheses")
+        return responses
+
     def _load_hypothesis(self, hypothesis_id: str) -> Hypothesis:
         """Load hypothesis from database."""
         with get_session() as session:

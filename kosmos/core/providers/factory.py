@@ -144,6 +144,30 @@ def get_provider_from_config(kosmos_config) -> LLMProvider:
             'organization': getattr(openai_config, 'organization', None),
         }
 
+    elif provider_name.lower() == 'litellm':
+        # LiteLLM configuration - supports any model format
+        litellm_config = getattr(kosmos_config, 'litellm', None)
+        if litellm_config:
+            provider_config = {
+                'model': litellm_config.model,
+                'api_key': getattr(litellm_config, 'api_key', None),
+                'api_base': getattr(litellm_config, 'api_base', None),
+                'max_tokens': getattr(litellm_config, 'max_tokens', 4096),
+                'temperature': getattr(litellm_config, 'temperature', 0.7),
+                'timeout': getattr(litellm_config, 'timeout', 120),
+            }
+        else:
+            # Try to get config from environment
+            import os
+            provider_config = {
+                'model': os.getenv('LITELLM_MODEL', 'gpt-3.5-turbo'),
+                'api_key': os.getenv('LITELLM_API_KEY'),
+                'api_base': os.getenv('LITELLM_API_BASE'),
+                'max_tokens': int(os.getenv('LITELLM_MAX_TOKENS', '4096')),
+                'temperature': float(os.getenv('LITELLM_TEMPERATURE', '0.7')),
+                'timeout': int(os.getenv('LITELLM_TIMEOUT', '120')),
+            }
+
     else:
         raise ValueError(f"Unknown provider in config: {provider_name}")
 
@@ -175,6 +199,17 @@ def _register_builtin_providers():
         register_provider("openai", OpenAIProvider)
     except ImportError:
         logger.debug("OpenAI provider not available (openai package not installed or not implemented yet)")
+
+    try:
+        from kosmos.core.providers.litellm_provider import LiteLLMProvider
+        register_provider("litellm", LiteLLMProvider)
+        # Register provider-specific aliases for convenience
+        register_provider("ollama", LiteLLMProvider)
+        register_provider("deepseek", LiteLLMProvider)
+        register_provider("lmstudio", LiteLLMProvider)
+        logger.debug("LiteLLM provider registered with aliases: ollama, deepseek, lmstudio")
+    except ImportError:
+        logger.debug("LiteLLM provider not available (litellm package not installed)")
 
 
 # Register on module import
