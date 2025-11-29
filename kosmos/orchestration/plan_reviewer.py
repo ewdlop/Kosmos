@@ -94,7 +94,7 @@ class PlanReviewerAgent:
         self.min_average_score = min_average_score
         self.min_dimension_score = min_dimension_score
 
-    async def review_plan(
+    def review_plan(
         self,
         plan: Dict,
         context: Dict
@@ -118,7 +118,7 @@ class PlanReviewerAgent:
 
         try:
             # Query LLM
-            response = await self.client.messages.create(
+            response = self.client.messages.create(
                 model=self.model,
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],

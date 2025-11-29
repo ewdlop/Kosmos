@@ -166,7 +166,7 @@ class ResearchWorkflow:
         logger.info(f"  Context: {context.get('findings_count', 0)} recent findings")
 
         # Step 2: Plan Creator generates tasks
-        plan = await self.plan_creator.create_plan(
+        plan = self.plan_creator.create_plan(
             research_objective=self.research_objective,
             context=context,
             num_tasks=num_tasks
@@ -184,7 +184,7 @@ class ResearchWorkflow:
             )
 
         # Step 4: Plan Reviewer validates quality
-        review = await self.plan_reviewer.review_plan(plan.to_dict(), context)
+        review = self.plan_reviewer.review_plan(plan.to_dict(), context)
 
         logger.info(
             f"  Plan review: {'APPROVED' if review.approved else 'REJECTED'} "
@@ -194,8 +194,8 @@ class ResearchWorkflow:
         # If rejected, attempt revision (once)
         if not review.approved:
             logger.info("  Revising plan based on feedback...")
-            plan = await self.plan_creator.revise_plan(plan, review.to_dict(), context)
-            review = await self.plan_reviewer.review_plan(plan.to_dict(), context)
+            plan = self.plan_creator.revise_plan(plan, review.to_dict(), context)
+            review = self.plan_reviewer.review_plan(plan.to_dict(), context)
 
             logger.info(
                 f"  Revised plan: {'APPROVED' if review.approved else 'REJECTED'}"
@@ -225,7 +225,7 @@ class ResearchWorkflow:
                 continue
 
             # ScholarEval validation
-            eval_score = await self.scholar_eval.evaluate_finding(finding)
+            eval_score = self.scholar_eval.evaluate_finding(finding)
 
             if eval_score.passes_threshold:
                 # Save validated finding

@@ -115,7 +115,7 @@ class ScholarEvalValidator:
         self.min_rigor_score = min_rigor_score
         self.model = model
 
-    async def evaluate_finding(self, finding: Dict) -> ScholarEvalScore:
+    def evaluate_finding(self, finding: Dict) -> ScholarEvalScore:
         """
         Evaluate finding using 8-dimension framework.
 
@@ -134,7 +134,7 @@ class ScholarEvalValidator:
 
         try:
             # Query LLM for scores
-            response = await self.client.messages.create(
+            response = self.client.messages.create(
                 model=self.model,
                 max_tokens=1500,
                 messages=[{"role": "user", "content": prompt}],
@@ -440,9 +440,9 @@ Provide scores as JSON object only, no additional text."""
             reasoning="Mock evaluation (no LLM client provided)"
         )
 
-    async def batch_evaluate(self, findings: list[Dict]) -> list[ScholarEvalScore]:
+    def batch_evaluate(self, findings: list[Dict]) -> list[ScholarEvalScore]:
         """
-        Evaluate multiple findings asynchronously.
+        Evaluate multiple findings.
 
         Args:
             findings: List of finding dictionaries
@@ -450,9 +450,7 @@ Provide scores as JSON object only, no additional text."""
         Returns:
             List of ScholarEvalScore objects
         """
-        import asyncio
-        tasks = [self.evaluate_finding(finding) for finding in findings]
-        return await asyncio.gather(*tasks)
+        return [self.evaluate_finding(finding) for finding in findings]
 
     def get_validation_statistics(self, scores: list[ScholarEvalScore]) -> Dict:
         """

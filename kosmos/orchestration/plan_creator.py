@@ -114,7 +114,7 @@ class PlanCreatorAgent:
         else:
             return 0.30  # Late: exploit findings
 
-    async def create_plan(
+    def create_plan(
         self,
         research_objective: str,
         context: Dict,
@@ -150,7 +150,7 @@ class PlanCreatorAgent:
 
         try:
             # Query LLM
-            response = await self.client.messages.create(
+            response = self.client.messages.create(
                 model=self.model,
                 max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}],
@@ -352,7 +352,7 @@ Generate a research plan as JSON (no additional text)."""
             priority=3
         )
 
-    async def revise_plan(
+    def revise_plan(
         self,
         original_plan: ResearchPlan,
         review_feedback: Dict,
@@ -379,7 +379,7 @@ Generate a research plan as JSON (no additional text)."""
         context_with_feedback['required_changes'] = required_changes
 
         # Regenerate plan
-        return await self.create_plan(
+        return self.create_plan(
             research_objective=context.get('research_objective', ''),
             context=context_with_feedback,
             num_tasks=len(original_plan.tasks)
