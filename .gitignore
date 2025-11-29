@@ -5,6 +5,7 @@ output.txt
 
 # Env
 .env
+.env.backup
 
 # Claude Code settings (keep commands/ directory)
 .claude/settings.local.json
@@ -135,3 +136,16 @@ pgadmin_data/
 
 # Local analysis files
 req_to_paper_analysis_*.md
+
+# Screenshots (may contain sensitive info)
+*.png
+*.jpg
+*.jpeg
+
+# Testing/debugging prompts
+E2E_RESUME_PROMPT*.md
+*_RESUME_PROMPT*.md
+
+# Literature cache
+.literature_cache/
+.literature_analysis_cache/

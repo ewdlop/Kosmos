@@ -38,7 +38,8 @@ def parse_json_response(
 
     Strategies tried in order:
     1. Direct JSON parse
-    2. Extract from ```json code blocks
+    2. Extract from ```json code blocks (closed)
+    2b. Extract from ```json code blocks (unclosed/truncated)
     3. Extract from ``` code blocks
     4. Extract JSON object using regex
     5. Clean common issues (trailing commas, single quotes)
@@ -80,6 +81,19 @@ def parse_json_response(
             return json.loads(json_block_match.group(1).strip())
         except json.JSONDecodeError:
             pass
+
+    # Strategy 2b: Extract from unclosed ```json blocks (truncated responses)
+    attempts += 1
+    unclosed_json_match = re.search(r'```json\s*([\s\S]+)', text)
+    if unclosed_json_match and not json_block_match:
+        # Try to find complete JSON object within the unclosed block
+        block_content = unclosed_json_match.group(1).strip()
+        json_obj_in_block = re.search(r'(\{[\s\S]*\})', block_content)
+        if json_obj_in_block:
+            try:
+                return json.loads(json_obj_in_block.group(1))
+            except json.JSONDecodeError:
+                pass
 
     # Strategy 3: Extract from ``` code blocks (without json marker)
     attempts += 1

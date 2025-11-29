@@ -445,10 +445,12 @@ class ExperimentDesignerAgent(BaseAgent):
 
         try:
             # Get structured output from Claude
+            # Use higher max_tokens for experiment protocols which can be verbose
             response = self.llm_client.generate_structured(
                 prompt=prompt,
                 schema=schema,
-                system_prompt=EXPERIMENT_DESIGNER.system_prompt
+                system=EXPERIMENT_DESIGNER.system_prompt,  # Fixed: was system_prompt
+                max_tokens=8192  # Increased from default 4096 for detailed protocols
             )
 
             # Parse and validate protocol
