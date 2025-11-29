@@ -13,8 +13,9 @@ import os
 
 from kosmos.utils.compat import model_to_dict
 
-_DEFAULT_CLAUDE_SONNET_MODEL = "claude-3-5-sonnet-20241022" #claude-sonnet-4-5
-_DEFAULT_CLAUDE_HAIKU_MODEL = "claude-3-5-haiku-20241022"  #claude-haiku-4-5
+# Claude 4.5 models (November 2025)
+_DEFAULT_CLAUDE_SONNET_MODEL = "claude-sonnet-4-5"
+_DEFAULT_CLAUDE_HAIKU_MODEL = "claude-haiku-4-5"
 
 def parse_comma_separated(v):
     """Parse comma-separated string into list for Pydantic V2 compatibility."""

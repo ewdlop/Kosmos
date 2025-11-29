@@ -96,7 +96,7 @@ class AnthropicProvider(LLMProvider):
         self.enable_auto_model_selection = config.get('enable_auto_model_selection', False)
 
         # Model variants for auto-selection
-        self.haiku_model = _DEFAULT_CLAUDE_SONNET_MODEL
+        self.haiku_model = _DEFAULT_CLAUDE_HAIKU_MODEL
         self.sonnet_model = _DEFAULT_CLAUDE_SONNET_MODEL
 
         self.base_url = config.get('base_url') or os.environ.get('CLAUDE_BASE_URL') # NEW: get user-supplied endpoint if any

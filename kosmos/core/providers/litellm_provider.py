@@ -36,13 +36,16 @@ logger = logging.getLogger(__name__)
 from kosmos.config import _DEFAULT_CLAUDE_SONNET_MODEL, _DEFAULT_CLAUDE_HAIKU_MODEL
 
 # Model pricing per 1M tokens (input, output) in USD
-# Updated pricing as of 2024
+# Updated pricing as of November 2025
 MODEL_PRICING: Dict[str, tuple] = {
-    # Anthropic
+    # Anthropic Claude 4.5 (current)
+    "claude-sonnet-4-5": (3.0, 15.0),
+    "claude-haiku-4-5": (1.0, 5.0),
+    "claude-opus-4-5": (15.0, 75.0),
+    # Anthropic Claude 3.5 (legacy)
     "claude-3-5-sonnet-20241022": (3.0, 15.0),
     "claude-3-5-haiku-20241022": (1.0, 5.0),
-    _DEFAULT_CLAUDE_SONNET_MODEL: (3.0, 15.0),
-    _DEFAULT_CLAUDE_HAIKU_MODEL: (1.0, 5.0),
+    # Anthropic Claude 3 (legacy)
     "claude-3-opus-20240229": (15.0, 75.0),
     "claude-3-sonnet-20240229": (3.0, 15.0),
     "claude-3-haiku-20240307": (0.25, 1.25),
